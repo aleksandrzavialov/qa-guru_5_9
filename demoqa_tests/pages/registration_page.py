@@ -1,7 +1,7 @@
 from selene import be, have, command
 from selene.support.shared import browser
-
-from demoqa_tests import helpers, resource, data
+from demoqa_tests import helpers, resource
+from demoqa_tests.data.users import User
 
 
 class RegistrationPage:
@@ -32,48 +32,73 @@ class RegistrationPage:
         browser.element('#userNumber').should(be.blank).type(value)
         return self
 
-    def fill_date_of_birth(self, day, month, year):
+    def fill_date_of_birth(self, date):
         browser.element('#dateOfBirthInput').click()
-        browser.element(f'.react-datepicker__year-select [value="{year}"]').click()
-        browser.element(f'.react-datepicker__month-select [value="{int(month) - 1}"]').click()
-        browser.element(f'.react-datepicker__day--0{day}:not(.react-datepicker__day--outside-month)').click()
+        parsed_date = [date.strftime('%Y'), str(int(date.strftime('%m'))-1), date.strftime("%d")]
+        browser.element(f'.react-datepicker__year-select [value="{parsed_date[0]}"]').click()
+        browser.element(f'.react-datepicker__month-select [value="{parsed_date[1]}"]').click()
+        browser.element(f'.react-datepicker__day--0{parsed_date[2]}:'
+                        f'not(.react-datepicker__day--outside-month)').click()
         return self
 
-    def modal_should_have_registered_user_info(self, *args):
+    def _modal_should_have_registered_user_info(self, *args):
         browser.all(' td:nth-of-type(2)').should(have.exact_texts(args))
 
-    def select_subjects(self, value):
+    def _select_subjects(self, value):
         for subject in value:
             browser.element('#subjectsInput').should(be.blank).type(subject).press_tab()
         return self
 
-    def select_hobby(self, value):
+    def _select_hobby(self, value):
         browser.all('.custom-checkbox').element_by(have.exact_text(value)).click()
         return self
 
-    def upload_picture(self, value):
+    def _upload_picture(self, value):
         browser.element('#uploadPicture').send_keys(resource.get_path(value))
         return self
 
-    def fill_address(self, value):
+    def _fill_address(self, value):
         browser.element('#currentAddress').should(be.blank).type(value)
         return self
 
-    def select_state(self, value):
+    def _select_state(self, value):
         browser.element('#state').perform(command.js.scroll_into_view).click()
         self.dropdown_menu.element_by(have.exact_text(value)).click()
         return self
 
-    def select_city(self, value):
+    def _select_city(self, value):
         browser.element('#city').perform(command.js.scroll_into_view).click()
         self.dropdown_menu.element_by(have.exact_text(value)).click()
         return self
 
-    def submit_data(self):
+    def _submit_data(self):
         browser.element('#submit').execute_script('element.click()')
 
-    def should_have_title(self, value):
+    def _should_have_title(self, value):
         browser.element('#example-modal-sizes-title-lg').should(have.text(value))
 
-    def close_modal(self):
+    def _close_modal(self):
         browser.element('#closeLargeModal').should(be.clickable)
+
+    def register(self, user: User):
+        self.fill_first_name(user.first_name) \
+            .fill_last_name(user.last_name) \
+            .fill_email(user.email) \
+            .select_gender(user.gender) \
+            .fill_mobile(user.mobile) \
+            .fill_date_of_birth(user.date_of_birth) \
+            ._select_subjects(user.subjects) \
+            ._select_hobby(user.hobby) \
+            ._upload_picture(user.picture) \
+            ._fill_address(user.address) \
+            ._select_state(user.state) \
+            ._select_city(user.city) \
+            ._submit_data()
+
+    def should_have_registered(self, user: User):
+        self._should_have_title('Thanks for submitting the form')
+        self._modal_should_have_registered_user_info(f'{user.first_name} {user.last_name}', user.email, user.gender,
+                                                     user.mobile, user.date_of_birth.strftime('%d %B,%Y'),
+                                                    ', '.join(user.subjects), user.hobby, user.picture, user.address,
+                                                    f'{user.state} {user.city}')
+        self._close_modal()

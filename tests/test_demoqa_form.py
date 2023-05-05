@@ -1,28 +1,15 @@
+import datetime
+
 from demoqa_tests.pages.registration_page import RegistrationPage
+from demoqa_tests.data.users import User, UserHobby, UserGender
 
 
 def test_form_filling(browser_actions):
     registration_page = RegistrationPage()
+    tested_user = User(first_name='Ivan', last_name='Petrov', email='ivanpetrov@mail.ru', gender=UserGender.Male.name,
+                       mobile='8999999999', date_of_birth=datetime.date(1989, 11, 19), subjects=['Maths', 'Hindi'],
+                       hobby=UserHobby.Reading.name, picture='Capibara.jpg', address='Pushkina Street, Kolotushkina house',
+                       state='Uttar Pradesh', city='Merrut')
     registration_page.open()
-    (
-        registration_page
-        .fill_first_name('Ivan')
-        .fill_last_name('Petrov')
-        .fill_email('ivanpetrov@mail.ru')
-        .select_gender('Male')
-        .fill_mobile('8999999999')
-        .fill_date_of_birth('19', '11', '1989')
-        .select_subjects(['Maths', 'Hindi'])
-        .select_hobby('Reading')
-        .upload_picture('Capibara.jpg')
-        .fill_address('Pushkina Street, Kolotushkina house')
-        .select_state('Uttar Pradesh')
-        .select_city('Merrut')
-        .submit_data()
-    )
-    registration_page.should_have_title('Thanks for submitting the form')
-    registration_page.modal_should_have_registered_user_info('Ivan Petrov', 'ivanpetrov@mail.ru', 'Male', '8999999999',
-                                                       '19 November,1989', 'Maths, Hindi', 'Reading', 'Capibara.jpg',
-                                                       'Pushkina Street, Kolotushkina house',
-                                                       'Uttar Pradesh Merrut')
-    registration_page.close_modal()
+    registration_page.register(tested_user)
+    registration_page.should_have_registered(tested_user)
